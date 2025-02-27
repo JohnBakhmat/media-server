@@ -1,0 +1,21 @@
+{
+	"name": "media-server",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "bun run --watch ./src/index.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "^0.57.2",
+		"effect": "^3.13.2",
+		"kysely": "^0.27.5",
+		"kysely-bun-sqlite": "^0.3.2",
+		"nanoid": "^5.1.2"
+	}
+}
