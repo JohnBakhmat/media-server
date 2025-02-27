@@ -6,7 +6,8 @@ import { nanoid } from "nanoid";
 import { db } from "./db/database";
 import type { MediaFile, NewMediaFile } from "./db/types";
 
-const dir: string = "/Users/johnb/music/Music/Media.localized/Music/";
+const dir: string = "/home/john/Music/Music/";
+const supporterExtenstions = ["m4a", "mp3", "flac", "wav"] as const;
 
 const program = Effect.gen(function* () {
 	const fs = yield* FileSystem.FileSystem;
@@ -15,7 +16,7 @@ const program = Effect.gen(function* () {
 	const files = fs.readDirectory(dir, { recursive: true });
 	const stream = pipe(
 		Stream.fromIterableEffect(files),
-		Stream.filter((x) => x.endsWith("m4a")),
+		Stream.filter((x) => supporterExtenstions.some((ext) => x.endsWith(ext))),
 		Stream.map((x) => path.resolve(dir, x)),
 		Stream.flatMap((file) =>
 			pipe(
