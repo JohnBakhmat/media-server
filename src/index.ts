@@ -38,8 +38,14 @@ const program = Effect.gen(function* () {
 	);
 
 	// biome-ignore lint/complexity/noForEach: <explanation>
-	const sink = Sink.forEach((x: NewMediaFile) =>
-		Effect.promise(() => db.insertInto("files").values(x).execute()),
+	const sink = Sink.forEach((file: NewMediaFile) =>
+		Effect.promise(() =>
+			db
+				.insertInto("files")
+				.values(file)
+				.onConflict((c) => c.column("path").doUpdateSet({ size: file.size }))
+				.execute(),
+		),
 	);
 
 	yield* Stream.run(stream, sink);
