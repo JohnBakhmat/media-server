@@ -1,8 +1,8 @@
-import type { Selectable } from "kysely";
-import type { Updateable } from "kysely";
-import type { Insertable } from "kysely";
-import type { ColumnType } from "kysely";
-import type { Generated } from "kysely";
+import type { Selectable } from 'kysely';
+import type { Updateable } from 'kysely';
+import type { Insertable } from 'kysely';
+import type { ColumnType } from 'kysely';
+import type { Generated } from 'kysely';
 
 export type Database = {
 	files: MediaFileTable;
