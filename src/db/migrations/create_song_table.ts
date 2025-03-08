@@ -36,6 +36,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 		.addColumn('artist_id', 'text', (x) =>
 			x.references('artists.id').onDelete('cascade'),
 		)
+		.addUniqueConstraint('song_artist_constraint', ['artist_id', 'song_id'])
 		.execute();
 }
 

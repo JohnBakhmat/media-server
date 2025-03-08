@@ -2,10 +2,10 @@ import { readdir } from 'node:fs/promises';
 import { FileSystem, Path } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { Effect, Logger, Queue, Sink, Stream, pipe } from 'effect';
+import { parseBuffer } from 'music-metadata';
 import { nanoid } from 'nanoid';
 import { db } from './db/database';
 import type { MediaFile, NewMediaFile } from './db/types';
-import { parseBuffer } from 'music-metadata';
 
 // const dir: string = "/home/john/Music/Music/";
 const dir = '/Users/johnb/Music/Music/Media.localized/Music';
@@ -51,14 +51,22 @@ const program = Effect.gen(function* () {
 		),
 	);
 
-	yield* Stream.run(stream, fileSink);
+	// biome-ignore lint/complexity/noForEach: <explanation>
+	const songSink = Sink.forEach((file: NewMediaFile) =>
+		pipe(
+			fs.readFile(file.path),
+			Effect.flatMap((x) => Effect.promise(() => parseBuffer(x))),
+			Effect.map((x) => ({
+				title: x.common.title,
+				album: x.common.album,
+				artists: x.common.artists,
+				albumArtist: x.common.artist,
+			})),
+			Effect.tap(Effect.log),
+		),
+	);
 
-	const file_path =
-		'/Users/johnb/Music/Music/Media.localized/Music/Foster the People/Torches X (Deluxe Edition)/08 Life on the Nickel.m4a';
-	const file = yield* fs.readFile(file_path);
-	const meta = yield* Effect.promise(() => parseBuffer(file));
-	const { title, album, artists, genre } = meta.common;
-	console.dir({ title, album, artists, genre });
+	yield* Stream.run(stream, Sink.zip(fileSink, songSink, { concurrent: true }));
 });
 
 BunRuntime.runMain(program.pipe(Effect.provide(BunContext.layer)));
