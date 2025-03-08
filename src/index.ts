@@ -6,8 +6,8 @@ import { nanoid } from 'nanoid';
 import { db } from './db/database';
 import type { NewMediaFile } from './db/types';
 
-// const dir: string = "/home/john/Music/Music/";
-const dir = '/Users/johnb/Music/Music/Media.localized/Music';
+const dir: string = '/home/john/Music/Music/';
+//const dir = '/Users/johnb/Music/Music/Media.localized/Music';
 const supporterExtenstions = ['m4a', 'mp3', 'flac', 'wav'] as const;
 
 const program = Effect.gen(function* () {
@@ -37,6 +37,7 @@ const program = Effect.gen(function* () {
 				}) satisfies NewMediaFile,
 		),
 		Stream.tap(Effect.log),
+		Stream.take(5),
 	);
 
 	// biome-ignore lint/complexity/noForEach: <explanation>
@@ -61,9 +62,45 @@ const program = Effect.gen(function* () {
 			Effect.map((x) => ({
 				title: x.common.title,
 				album: x.common.album,
-				artists: x.common.artists,
+				artists: x.common.artists ?? [],
 				albumArtist: x.common.artist,
 			})),
+			Effect.flatMap((x) =>
+				pipe(
+					Effect.promise(() =>
+						db
+							.insertInto('artists')
+							.values(
+								x.artists?.map((artist) => ({
+									id: nanoid(),
+									name: artist,
+								})),
+							)
+							.onConflict((c) => c.doNothing())
+							.returningAll()
+							.execute(),
+					),
+					Effect.map((artists) =>
+						artists.find((a) => a.name === x.albumArtist),
+					),
+					Effect.flatMap((artist) =>
+						Effect.if(!!artist, {
+							onTrue: () => Effect.try(() => artist?.id ?? ''),
+							onFalse: () =>
+								Effect.promise(() =>
+									db
+										.insertInto('artists')
+										.values({
+											name: x.albumArtist ?? nanoid(),
+										})
+										.onConflict((c) => c.doNothing())
+										.returning(['id'])
+										.execute(),
+								),
+						}),
+					),
+				),
+			),
 			Effect.tap(Effect.log),
 		),
 	);
