@@ -1,11 +1,10 @@
-import { readdir } from 'node:fs/promises';
 import { FileSystem, Path } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { Effect, Logger, Queue, Sink, Stream, pipe } from 'effect';
+import { Effect, Sink, Stream, pipe } from 'effect';
 import { parseBuffer } from 'music-metadata';
 import { nanoid } from 'nanoid';
 import { db } from './db/database';
-import type { MediaFile, NewMediaFile } from './db/types';
+import type { NewMediaFile } from './db/types';
 
 // const dir: string = "/home/john/Music/Music/";
 const dir = '/Users/johnb/Music/Music/Media.localized/Music';
@@ -42,12 +41,15 @@ const program = Effect.gen(function* () {
 
 	// biome-ignore lint/complexity/noForEach: <explanation>
 	const fileSink = Sink.forEach((file: NewMediaFile) =>
-		Effect.promise(() =>
-			db
-				.insertInto('files')
-				.values(file)
-				.onConflict((c) => c.column('path').doUpdateSet({ size: file.size }))
-				.execute(),
+		pipe(
+			Effect.promise(() =>
+				db
+					.insertInto('files')
+					.values(file)
+					.onConflict((c) => c.column('path').doUpdateSet({ size: file.size }))
+					.execute(),
+			),
+			Effect.tap(Effect.log),
 		),
 	);
 
